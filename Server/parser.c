@@ -293,7 +293,7 @@ int handle_mess_parse(char *buffer, Graph *g, Vertex *client)
     char id[10] = {0}; // inizializzo a zero
     int i = 6;
     int j = 0;
-    char *mes[200];
+    char mes[200];
 
     printf("[DEBUG] Parsing MESS?...\n");
 

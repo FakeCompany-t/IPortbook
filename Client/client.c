@@ -175,25 +175,27 @@ int main(int argc, char *argv[])
        MENU
        ========================= */
 
-    int scelta;
-
-    printf("\n=============================\n");
-    printf("          MENU CLIENT\n");
-    printf("=============================\n");
-    printf("1. Registrazione (REGIS)\n");
-    printf("2. Connessione (CONNE)\n");
-    printf("3. Richiesta amicizia (FRIE?)\n");
-    printf("0. Esci\n");
-    printf("=============================\n");
-
-    printf("Scelta: ");
-    scanf("%d", &scelta);
-
-    switch (scelta)
+    while (1)
     {
-        /* =========================
-           REGIS
-           ========================= */
+        int scelta;
+
+        printf("\n=============================\n");
+        printf("          MENU CLIENT\n");
+        printf("=============================\n");
+        printf("1. Registrazione (REGIS)\n");
+        printf("2. Connessione (CONNE)\n");
+        printf("3. Richiesta amicizia (FRIE?)\n");
+        printf("0. Esci\n");
+        printf("=============================\n");
+
+        printf("Scelta: ");
+        scanf("%d", &scelta);
+
+        switch (scelta)
+        {
+            /* =========================
+       REGIS
+       ========================= */
         case 1:
         {
             char id[9];
@@ -225,8 +227,8 @@ int main(int argc, char *argv[])
         }
 
         /* =========================
-           CONNE
-           ========================= */
+        CONNE
+        ========================= */
         case 2:
         {
             char id[9];
@@ -254,8 +256,8 @@ int main(int argc, char *argv[])
         }
 
         /* =========================
-           FRIE?
-           ========================= */
+        FRIE?
+        ========================= */
         case 3:
         {
             char friend_id[9];
@@ -273,8 +275,8 @@ int main(int argc, char *argv[])
         }
 
         /* =========================
-           USCITA
-           ========================= */
+        USCITA
+        ========================= */
         case 0:
         {
             printf("Chiusura client...\n");
@@ -283,38 +285,38 @@ int main(int argc, char *argv[])
         }
 
         /* =========================
-           SCELTA NON VALIDA
-           ========================= */
+        SCELTA NON VALIDA
+        ========================= */
         default:
         {
             printf("Scelta non valida.\n");
             break;
         }
+        }
+
+        /* =========================
+        RICEZIONE RISPOSTA SERVER
+        ========================= */
+
+        char response[BUFFER_SIZE];
+
+        int n = recv(sock, response, BUFFER_SIZE - 1, 0);
+
+        if (n > 0)
+        {
+            response[n] = '\0';
+            printf("\nRisposta server: %s\n", response);
+        }
+        else if (n == 0)
+        {
+            printf("\nIl server ha chiuso la connessione.\n");
+        }
+        else
+        {
+            perror("recv");
+        }
     }
-
-    /* =========================
-       RICEZIONE RISPOSTA SERVER
-       ========================= */
-
-    char response[BUFFER_SIZE];
-
-    int n = recv(sock, response, BUFFER_SIZE - 1, 0);
-
-    if (n > 0)
-    {
-        response[n] = '\0';
-        printf("\nRisposta server: %s\n", response);
-    }
-    else if (n == 0)
-    {
-        printf("\nIl server ha chiuso la connessione.\n");
-    }
-    else
-    {
-        perror("recv");
-    }
-
     close(sock);
-
+    
     return 0;
 }

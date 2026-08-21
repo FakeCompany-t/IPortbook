@@ -25,7 +25,7 @@ int regis(char *id, int port, int mdp, Graph *g, Vertex *client)
 
         return godbye(fd);
     }
-    
+
 
     // termini la popolazione del nodo
     // id
@@ -245,31 +245,31 @@ int consu(Vertex *client, Graph *g)
     /*
     Flusso *flux;
     flux = dequeueFlusso(client->msg_head);
-    
+
     switch (flux->tipo)
     {
         case 1: // 1=EIRF
-        
+
         eirf(flux->senderid, client->socket_fd, g, client->id);
         break;
-        
+
         case 2: // 2=MESS
-        
+
         ssem(flux->senderid, flux->messaggio, client->socket_fd);
         break;
-        
+
         case 3: // 3=AIRC
-        
+
         break;
-        
+
         case 4: // 4=OOLF
         doolf(flux->senderid, flux->messaggio, client->socket_fd);
         break;
-        
+
         default:
         break;
     }
-    */ 
+    */
 }
 
 //[SSEM>␣id␣mess+++]
