@@ -7,6 +7,7 @@ int handle_regis_parse(char *buffer, Graph *g, Vertex *client);
 int handle_conne_parse(char *buffer, Graph *g, Vertex *client);
 int handle_frie_parse(char *buffer, Graph *g, Vertex *client);
 int handle_mess_parse(char *buffer, Graph *g, Vertex *client);
+int handle_consu_parse(char *buffer, Graph *g, Vertex *client);
 
 void print_buffer_debug(unsigned char *buffer, int len)
 {
@@ -85,6 +86,11 @@ void *client_handler(void *arg)
         {
             printf("[INFO] Eseguo handle_mess_parse\n");
             handle_mess_parse(buffer, g, client);
+        }
+        else if (strncmp(comando, "CONSU", 5) == 0)
+        {
+            printf("[INFO] Eseguo handle_consu_parse\n");
+            handle_consu_parse(buffer, g, client);
         }
 
         else
@@ -350,4 +356,32 @@ int handle_mess_parse(char *buffer, Graph *g, Vertex *client)
     printf("[DEBUG] Terminatore +++ presente\n");
 
     return mess(id, mes, g, client);
+}
+
+int handle_consu_parse(char *buffer, Graph *g, Vertex *client)
+{
+    printf("[DEBUG] Parsing CONSU...\n");
+
+    /*
+     * CONSU non ha parametri.
+     * La richiesta deve essere:
+     *
+     * CONSU+++
+     */
+
+    if (buffer[5] != '+' ||
+        buffer[6] != '+' ||
+        buffer[7] != '+')
+    {
+        printf("[ERROR] Terminatore +++ mancante per CONSU\n");
+        return EXIT_FAILURE;
+    }
+
+    printf("[DEBUG] Formato CONSU corretto\n");
+
+    /*
+     * Chiamata alla funzione che gestisce
+     * la consultazione del primo flusso.
+     */
+    return consu(client, g);
 }

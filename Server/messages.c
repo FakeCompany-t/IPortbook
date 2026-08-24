@@ -16,7 +16,7 @@ int regis(char *id, int port, int mdp, Graph *g, Vertex *client)
         return godbye(fd);
     }
 
-    if (id_exists(g,id))
+    if (id_exists(g, id))
     {
         int fd = client->socket_fd;
         free(client);
@@ -26,7 +26,6 @@ int regis(char *id, int port, int mdp, Graph *g, Vertex *client)
         return godbye(fd);
     }
 
-
     // termini la popolazione del nodo
     // id
     strncpy(client->id, id, 8);
@@ -35,6 +34,8 @@ int regis(char *id, int port, int mdp, Graph *g, Vertex *client)
     // mdp
     client->mdp = mdp;
     addVertex(g, client);
+
+    printGraph(g);
 
     pthread_mutex_unlock(&g->mutex);
 
@@ -81,16 +82,17 @@ int conne(char *id, int mdp, Graph *g, Vertex *client)
 
     pthread_mutex_lock(&g->mutex);
 
+    printGraph(g);
+
     Vertex *v = findVertex(g, id);
 
     if (v == NULL)
     {
         int fd = client->socket_fd;
-        free(v);
-        free(client);
+        remove_vertex(g,"TEMP");
 
         pthread_mutex_unlock(&g->mutex);
-
+        printf("[DEBUG] Utente non trovato %s\n", id);
         return godbye(fd);
     }
 
@@ -108,7 +110,7 @@ int conne(char *id, int mdp, Graph *g, Vertex *client)
     v->ip_addr = client->ip_addr;
     v->socket_fd = client->socket_fd;
 
-    free(client);
+    remove_vertex(g,"TEMP");
 
     pthread_mutex_unlock(&g->mutex);
 
@@ -242,34 +244,53 @@ void linum(int num_item, Graph *g, int fd)
 //[CONSU+++]
 int consu(Vertex *client, Graph *g)
 {
-    /*
+
     Flusso *flux;
-    flux = dequeueFlusso(client->msg_head);
+    flux = dequeueFlusso(&client->msg_head);
+    if (flux == NULL)
+    {
+        nocon(client->socket_fd);
+        return 0;
+    }
 
     switch (flux->tipo)
     {
-        case 1: // 1=EIRF
+    case 1: // 1=EIRF
 
         eirf(flux->senderid, client->socket_fd, g, client->id);
         break;
 
-        case 2: // 2=MESS
+    case 2: // 2=MESS
 
         ssem(flux->senderid, flux->messaggio, client->socket_fd);
         break;
 
-        case 3: // 3=AIRC
+    case 3: // 3=AIRC - risposta a richiesta di amicizia
 
+        if (flux->status == 1)
+        {
+            frien(flux->senderid, client->socket_fd);
+        }
+        else if (flux->status == 2)
+        {
+            nofriend(flux->senderid, client->socket_fd);
+        }
         break;
 
-        case 4: // 4=OOLF
+    case 4: // 4=OOLF
         doolf(flux->senderid, flux->messaggio, client->socket_fd);
         break;
 
-        default:
+    default:
         break;
     }
-    */
+
+    /*
+     * Il flusso è stato consultato,
+     * quindi deve essere eliminato.
+     */
+    freeFlusso(flux);
+    return 0;
 }
 
 //[SSEM>␣id␣mess+++]
@@ -323,13 +344,12 @@ int doolf(char *id, char *mess, int fd)
 //[EIRF>␣id+++]
 int eirf(char *id, int fd, Graph *g, char *consuid)
 {
-    /*
-    char buffer[17];
 
+    char buffer[17];
     int offset = 0;
 
-    // "CONNE "
-    memcpy(buffer + offset, "EIRF ", 6);
+    // "EIRF "
+    memcpy(buffer + offset, "EIRF> ", 6);
     offset += 6;
 
     // id (8 byte)
@@ -342,7 +362,15 @@ int eirf(char *id, int fd, Graph *g, char *consuid)
 
     send(fd, buffer, sizeof(buffer), 0);
 
-    char response[8];
+    /*
+     * Attesa della risposta:
+     *
+     * OKIRF+++
+     * oppure
+     * NOKRF+++
+     */
+
+    char response[9];
     int received = 0;
 
     while (received < 8)
@@ -353,39 +381,161 @@ int eirf(char *id, int fd, Graph *g, char *consuid)
         received += n;
     }
 
-    if (strncmp(response, "OKIRF+++", 8) == 0)
+    response[8] = '\0';
+
+    /*
+     * RICHIESTA ACCETTATA
+     */
+    if (strcmp(response, "OKIRF+++") == 0)
     {
-        send(fd, "ACKRF+++",8, 0);
-        okirf(findVertex(g, id), consuid, g);
-    }
-    else if (strncmp(response, "NOKRF+++", 8) == 0)
-    {
+        /*
+         * ACK al client che ha ricevuto
+         * la richiesta.
+         */
         send(fd, "ACKRF+++", 8, 0);
-        nokrf(findVertex(g, id), consuid);
+
+        /*
+         * Troviamo il client che aveva
+         * inviato la richiesta.
+         */
+        Vertex *requester = findVertex(g, id);
+
+        if (requester == NULL)
+        {
+            return -1;
+        }
+
+        /*
+         * Aggiunta dell'amicizia.
+         */
+        addUndirectedEdge(g, consuid, id);
+
+        /*
+         * Creazione del flusso AIRC sul
+         * client che aveva fatto la richiesta.
+         *
+         * senderid = client che ha risposto.
+         * status = 1 -> accettata.
+         */
+        enqueueFlusso(&requester->msg_head,
+                      3,
+                      consuid,
+                      NULL,
+                      1);
+
+        /*
+         * QUI va la notifica UDP 1XX
+         * al client requester.
+         */
+        /*
+         * notify_udp(requester, 1);
+         */
+
+        return 0;
     }
-    */
+
+    /*
+     * RICHIESTA RIFIUTATA
+     */
+    if (strcmp(response, "NOKRF+++") == 0)
+    {
+        /*
+         * ACK al client che ha ricevuto
+         * la richiesta.
+         */
+        send(fd, "ACKRF+++", 8, 0);
+
+        /*
+         * Troviamo il richiedente.
+         */
+        Vertex *requester = findVertex(g, id);
+
+        if (requester == NULL)
+        {
+            return -1;
+        }
+
+        /*
+         * Creiamo il flusso AIRC sul richiedente.
+         *
+         * senderid = client che ha rifiutato.
+         * status = 2 -> rifiutata.
+         */
+        enqueueFlusso(&requester->msg_head,
+                      3,
+                      consuid,
+                      NULL,
+                      2);
+
+        /*
+         * QUI va la notifica UDP 2XX
+         * al client requester.
+         */
+        /*
+         * notify_udp(requester, 2);
+         */
+
+        return 0;
+    }
+
+    /*
+     * Risposta non valida.
+     */
+    return -1;
 }
+
+/*
 
 void okirf(Vertex *client, char *id, Graph *g)
-{/*
-    enqueueFlusso(client->msg_head, 3, id, NULL, 1);
-    addUndirectedEdge(g, client->id, id);
-    // UDP
-    */
+{
+     enqueueFlusso(client->msg_head, 3, id, NULL, 1);
+     addUndirectedEdge(g, client->id, id);
+     // UDP
 }
 void nokrf(Vertex *client, char *id)
+    {
+        //   enqueueFlusso(client->msg_head, 3, id, NULL, 2);
+    }
+*/
+
+// [FRIEN id+++]
+int frien(char *id, int fd)
 {
- //   enqueueFlusso(client->msg_head, 3, id, NULL, 2);
+    char buffer[17];
+    int offset = 0;
+
+    memcpy(buffer + offset, "FRIEN ", 6);
+    offset += 6;
+
+    memcpy(buffer + offset, id, 8);
+    offset += 8;
+
+    memcpy(buffer + offset, "+++", 3);
+    offset += 3;
+
+    send(fd, buffer, offset, 0);
+
+    return 0;
 }
 
-//[FRIEN␣id+++]
-int frien(char *id)
+// [NOFRI id+++]
+int nofriend(char *id, int fd)
 {
-}
+    char buffer[17];
+    int offset = 0;
 
-//[NOFRI␣id+++]
-int nofriend(char *id)
-{
+    memcpy(buffer + offset, "NOFRI ", 6);
+    offset += 6;
+
+    memcpy(buffer + offset, id, 8);
+    offset += 8;
+
+    memcpy(buffer + offset, "+++", 3);
+    offset += 3;
+
+    send(fd, buffer, offset, 0);
+
+    return 0;
 }
 
 //[NOCON+++]

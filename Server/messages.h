@@ -52,10 +52,10 @@ void nokrf(Vertex *client, char *id);
 int ackrf();
 
 // [FRIEN id+++]
-int frien(char *id);
+int frien(char *id, int fd);
 
 // [NOFRI id+++]
-int nofriend(char *id);
+int nofriend(char *id, int fd);
 
 
 /* ================= MESSAGGI PRIVATI ================= */

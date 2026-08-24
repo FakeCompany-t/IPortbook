@@ -91,14 +91,66 @@ void addUndirectedEdge(Graph *g, const char *v1, const char *v2) {
 }
 
 /* ===== STAMPA GRAFO===== */
-void printGraph(Graph *g) {
-    for (Vertex *v = g->vertices; v != NULL; v = v->next_vertex) {
-        printf("%s: ", v->id);
-        for (Edge *e = v->adj_head; e != NULL; e = e->next) {
-            printf("%s -> ", e->id);
+void printGraph(Graph *g)
+{
+    for (Vertex *v = g->vertices; v != NULL; v = v->next_vertex)
+    {
+        printf("\n========================================\n");
+        printf("VERTICE: %s\n", v->id);
+        printf("========================================\n");
+
+        /* Lista amici */
+        printf("Amici: ");
+
+        if (v->adj_head == NULL)
+        {
+            printf("nessuno");
         }
-        printf("NULL\n");
+        else
+        {
+            for (Edge *e = v->adj_head; e != NULL; e = e->next)
+            {
+                printf("%s", e->id);
+
+                if (e->next != NULL)
+                    printf(" -> ");
+            }
+        }
+
+        printf("\n");
+
+
+        /* Lista flussi */
+        printf("Flussi:\n");
+
+        if (v->msg_head == NULL)
+        {
+            printf("  nessuno\n");
+        }
+        else
+        {
+            Flusso *f = v->msg_head;
+
+            while (f != NULL)
+            {
+                printf("  - Tipo: %d | Sender: %s | Status: %d",
+                       f->tipo,
+                       f->senderid,
+                       f->status);
+
+                if (f->messaggio != NULL)
+                {
+                    printf(" | Messaggio: %s", f->messaggio);
+                }
+
+                printf("\n");
+
+                f = f->next;
+            }
+        }
     }
+
+    printf("\n========================================\n\n");
 }
 
 void freeGraph(Graph *g) {
