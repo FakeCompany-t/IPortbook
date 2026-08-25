@@ -294,27 +294,63 @@ int consu(Vertex *client, Graph *g)
 }
 
 //[SSEM>␣id␣mess+++]
+// [SSEM> id mess+++]
 int ssem(char *id, char *mess, int fd)
 {
-    char buffer[215];
+    char buffer[218];
     int offset = 0;
+    int mess_len;
 
-    // "SSEM "
-    memcpy(buffer + offset, "SSEM ", 6);
-    offset += 6;
+    /* =========================
+       Controllo messaggio
+       ========================= */
+    if (id == NULL || mess == NULL)
+    {
+        return -1;
+    }
 
-    // id (8 byte)
+    mess_len = strlen(mess);
+
+    if (mess_len > 200)
+    {
+        mess_len = 200;
+    }
+
+    /* =========================
+       "SSEM "
+       ========================= */
+    memcpy(buffer + offset, "SSEM ", 5);
+    offset += 5;
+
+    /* =========================
+       ID - 8 byte
+       ========================= */
     memcpy(buffer + offset, id, 8);
     offset += 8;
 
-    memcpy(buffer + offset, mess, 200);
-    offset += 200;
+    /* =========================
+       Spazio
+       ========================= */
+    buffer[offset++] = ' ';
 
-    // terminatore +++
+    /* =========================
+       Messaggio
+       ========================= */
+    memcpy(buffer + offset, mess, mess_len);
+    offset += mess_len;
+
+    /* =========================
+       Terminatore +++
+       ========================= */
     memcpy(buffer + offset, "+++", 3);
     offset += 3;
 
-    send(fd, buffer, sizeof(buffer), 0);
+    /* =========================
+       Invio
+       ========================= */
+    send(fd, buffer, offset, 0);
+
+    return 0;
 }
 
 //[OOLF>␣id␣mess+++]

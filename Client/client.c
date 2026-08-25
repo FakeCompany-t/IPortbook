@@ -272,10 +272,7 @@ void handle_eirf(int sock, char *response)
    ========================= */
 int main(int argc, char *argv[])
 {
-    /*
-     * IP e porta del server rimangono
-     * parametri di esecuzione.
-     */
+    
     if (argc != 3)
     {
         printf("Uso: %s <ip_server> <porta>\n", argv[0]);

@@ -325,7 +325,7 @@ int handle_mess_parse(char *buffer, Graph *g, Vertex *client)
 
     j = 0;
     // Estrazione MESS
-    while (buffer[i] != '\0' && j < sizeof(id) - 1)
+    while (buffer[i] != '\0' && j < sizeof(mes) - 1)
     {
         if (buffer[i] == '+' && buffer[i + 1] == '+' && buffer[i + 2] == '+')
         {
@@ -337,7 +337,7 @@ int handle_mess_parse(char *buffer, Graph *g, Vertex *client)
         j++;
     }
     mes[j] = '\0'; // terminazione stringa
-    printf("[DEBUG] MESS estratto: '%s'\n", id);
+    printf("[DEBUG] MESS estratto: '%s'\n", mes);
 
     if (!check_mess(mes))
     {
