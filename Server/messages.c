@@ -583,15 +583,9 @@ int nocon(int fd)
 //[IQUIT+++]
 int quit(int fd)
 {
-    if (send(fd, "IQUIT+++", 8, 0) == -1)
+    if (send(fd, "GOBYE+++", 8, 0) == -1)
     {
         perror("Errore nell'invio di GOBYE");
     }
-    char *buf[8];
-    if (recv(fd, buf, 8, 0) == -1)
-    {
-        perror("Errore nella ricezione");
-    }
-
     return close(fd);
 }

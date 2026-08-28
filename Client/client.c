@@ -146,15 +146,11 @@ void send_mess(int sock, char *friend_id, char *messaggio)
 void send_consu(int sock)
 {
     char buffer[BUFFER_SIZE];
-    int offset = 0;
 
-    memcpy(buffer + offset, "CONSU", 5);
-    offset += 5;
+    memcpy(buffer, "CONSU+++", 8);
 
-    memcpy(buffer + offset, "+++", 3);
-    offset += 3;
 
-    send_all(sock, buffer, offset);
+    send_all(sock, buffer, 8);
 }
 
 /* =========================
@@ -180,6 +176,19 @@ void send_nokrf(int sock)
 
     send_all(sock, buffer, 8);
 }
+
+/* =========================
+   IQUIT
+   ========================= */
+void send_iquit(int sock)
+{
+    char buffer[8];
+
+    memcpy(buffer, "IQUIT+++", 8);
+
+    send_all(sock, buffer, 8);
+}
+
 
 /* =========================
    GESTIONE EIRF
@@ -491,11 +500,10 @@ int main(int argc, char *argv[])
                ========================= */
             case 0:
             {
-                printf("Chiusura client...\n");
+                printf("IQUIT...\n");
 
-                close(sock);
-
-                return 0;
+                send_iquit(sock);
+                break;
             }
 
             /* =========================
