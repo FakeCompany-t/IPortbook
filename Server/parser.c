@@ -4,7 +4,7 @@
 #define BUFFER_SIZE 1024
 
 int handle_regis_parse(char *buffer, Graph *g, Vertex *client);
-int handle_conne_parse(char *buffer, Graph *g, Vertex *client);
+int handle_conne_parse(char *buffer, Graph *g, Vertex **client);
 int handle_frie_parse(char *buffer, Graph *g, Vertex *client);
 int handle_mess_parse(char *buffer, Graph *g, Vertex *client);
 int handle_consu_parse(char *buffer, Graph *g, Vertex *client);
@@ -75,8 +75,14 @@ void *client_handler(void *arg)
         }
         else if (strncmp(comando, "CONNE", 5) == 0)
         {
+            if (client->logged_in)
+            {
+                printf("[WARN] Operazione richiesta da client loggato\n");
+                godbye(client->socket_fd);
+                return NULL;
+            }
             printf("[INFO] Eseguo handle_conne_parse\n");
-            handle_conne_parse((char *)buffer, g, client);
+            handle_conne_parse((char *)buffer, g, &client);
         }
         else if (strncmp(comando, "FRIE?", 5) == 0)
         {
@@ -85,16 +91,34 @@ void *client_handler(void *arg)
         }
         else if (strncmp(comando, "MESS?", 5) == 0)
         {
+            if (!client->logged_in)
+            {
+                printf("[WARN] Operazione richiesta da client non loggato\n");
+                godbye(client->socket_fd);
+                return NULL;
+            }
             printf("[INFO] Eseguo handle_mess_parse\n");
             handle_mess_parse(buffer, g, client);
         }
         else if (strncmp(comando, "CONSU", 5) == 0)
         {
+            if (!client->logged_in)
+            {
+                printf("[WARN] Operazione richiesta da client non loggato\n");
+                godbye(client->socket_fd);
+                return NULL;
+            }
             printf("[INFO] Eseguo handle_consu_parse\n");
             handle_consu_parse(buffer, g, client);
         }
         else if (strncmp(comando, "IQUIT", 5) == 0)
         {
+            if (!client->logged_in)
+            {
+                printf("[WARN] Operazione richiesta da client non loggato\n");
+                godbye(client->socket_fd);
+                return NULL;
+            }
             printf("[INFO] Eseguo handle_iquit_parse\n");
             handle_iquit_parse(buffer, g, client);
         }
@@ -204,7 +228,7 @@ int handle_regis_parse(char *buffer, Graph *g, Vertex *client)
     return regis(id, udp, mdp_value, g, client);
 }
 
-int handle_conne_parse(char *buffer, Graph *g, Vertex *client)
+int handle_conne_parse(char *buffer, Graph *g, Vertex **client)
 {
 
     char id[10];
@@ -258,6 +282,16 @@ int handle_conne_parse(char *buffer, Graph *g, Vertex *client)
 
 int handle_frie_parse(char *buffer, Graph *g, Vertex *client)
 {
+    printf("Informazioni Client:");
+    printf("id:%s",client->id);
+    printf("logged-in:%d",client->logged_in);
+    if (!client->logged_in)
+    {
+        printf("[WARN] Operazione richiesta da client non loggato\n");
+        godbye(client->socket_fd);
+        return -1;
+    }
+
     char id[10] = {0}; // inizializzo a zero
     int i = 6;         // salto "FRIE? "
     int j = 0;
@@ -392,7 +426,8 @@ int handle_consu_parse(char *buffer, Graph *g, Vertex *client)
     return consu(client, g);
 }
 
-int handle_iquit_parse(char *buffer, Graph *g, Vertex *client){
+int handle_iquit_parse(char *buffer, Graph *g, Vertex *client)
+{
     printf("[DEBUG] Parsing IQUIT...\n");
 
     if (buffer[5] != '+' ||
@@ -405,6 +440,6 @@ int handle_iquit_parse(char *buffer, Graph *g, Vertex *client){
 
     printf("[DEBUG] Formato IQUIT corretto\n");
 
-
+    client->logged_in = 0;
     return quit(client->socket_fd);
 }

@@ -33,6 +33,10 @@ typedef struct Vertex {
     Edge *adj_head;         // lista archi adiacenti
     Flusso *msg_head;      // lista messaggi
     struct Vertex *next_vertex; // vertice successivo nella lista del grafo
+
+    //logged_in = 0 → registrato ma non connesso
+    //logged_in = 1 → attualmente connesso/loggato
+    int logged_in;
 } Vertex;
 
 // Struttura per un grafo

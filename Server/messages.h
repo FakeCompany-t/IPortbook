@@ -19,7 +19,7 @@ int regis(char *id, int port, int mdp, Graph *g, Vertex *client);
 int godbye(int fd);
 
 // [CONNE id mdp+++]
-int conne(char *id, int mdp, Graph *g, Vertex *client);
+int conne(char *id, int mdp, Graph *g, Vertex **client);
 
 // [NOCON+++]
 int nocon(int fd);

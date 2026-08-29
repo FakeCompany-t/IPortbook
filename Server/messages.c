@@ -33,6 +33,8 @@ int regis(char *id, int port, int mdp, Graph *g, Vertex *client)
     client->port_udp = port;
     // mdp
     client->mdp = mdp;
+    // logged_in
+    client->logged_in = 1;
     addVertex(g, client);
 
     printGraph(g);
@@ -77,46 +79,131 @@ int godbye(int fd)
 }
 
 //[CONNE␣id␣mdp+++]
-int conne(char *id, int mdp, Graph *g, Vertex *client)
+int conne(char *id, int mdp, Graph *g, Vertex **client)
 {
+    int fd;
 
     pthread_mutex_lock(&g->mutex);
 
-    printGraph(g);
+    fd = (*client)->socket_fd;
 
+    /*
+     * Cerco l'utente registrato.
+     */
     Vertex *v = findVertex(g, id);
+
+    /*
+     * =========================
+     * UTENTE NON REGISTRATO
+     * =========================
+     */
 
     if (v == NULL)
     {
-        int fd = client->socket_fd;
-        remove_vertex(g,"TEMP");
+        printf("[DEBUG] Utente %s non registrato\n", id);
 
         pthread_mutex_unlock(&g->mutex);
-        printf("[DEBUG] Utente non trovato %s\n", id);
+
+        /*
+         * Il TEMP non è nel grafo,
+         * quindi NON bisogna usare remove_vertex().
+         */
+        free(*client);
+        *client = NULL;
+
         return godbye(fd);
     }
+
+    /*
+     * =========================
+     * PASSWORD ERRATA
+     * =========================
+     */
 
     if ((uint16_t)mdp != v->mdp)
     {
-        int fd = client->socket_fd;
-        free(client);
+        printf("[DEBUG] Password errata per utente %s\n", id);
 
         pthread_mutex_unlock(&g->mutex);
 
-        printf("[DEBUG] Password errata per utente %s\n", id);
+        free(*client);
+        *client = NULL;
+
         return godbye(fd);
     }
 
-    v->ip_addr = client->ip_addr;
-    v->socket_fd = client->socket_fd;
+    /*
+     * =========================
+     * IL SOCKET ERA GIA'
+     * ASSOCIATO AD UN ALTRO ACCOUNT
+     * =========================
+     */
 
-    remove_vertex(g,"TEMP");
+    Vertex *old_client = NULL;
+
+    for (Vertex *temp = g->vertices;
+         temp != NULL;
+         temp = temp->next_vertex)
+    {
+        if (temp->socket_fd == fd)
+        {
+            old_client = temp;
+            break;
+        }
+    }
+
+    /*
+     * Se il socket apparteneva già
+     * ad un altro account, lo disconnetto
+     * logicamente.
+     *
+     * NON elimino il Vertex.
+     */
+    if (old_client != NULL && old_client != v)
+    {
+        printf("[DEBUG] Socket %d precedentemente associato a %s\n",
+               fd,
+               old_client->id);
+
+        old_client->logged_in = 0;
+        old_client->socket_fd = -1;
+    }
+
+    /*
+     * =========================
+     * ASSOCIAZIONE NUOVO ACCOUNT
+     * =========================
+     */
+
+    v->ip_addr = (*client)->ip_addr;
+    v->socket_fd = fd;
+    v->logged_in = 1;
+
+    /*
+     * Il TEMP non serve più.
+     *
+     * Da questo momento il thread
+     * deve utilizzare il vero Vertex.
+     */
+    free(*client);
+    *client = v;
+
+    printf("[DEBUG] Connessione riuscita: %s\n", v->id);
+    printf("[DEBUG] socket=%d logged-in=%d\n",
+           v->socket_fd,
+           v->logged_in);
+
+    printGraph(g);
 
     pthread_mutex_unlock(&g->mutex);
 
-    if (send(v->socket_fd, "HELLO+++", 8, 0) == -1)
+    /*
+     * Conferma al client.
+     */
+    if (send(fd, "HELLO+++", 8, 0) == -1)
     {
         perror("Errore nell'invio di HELLO");
+        return -1;
     }
 
     return 0;
@@ -146,6 +233,7 @@ int friesendrequest(char *id, Graph *g, Vertex *sender)
 
     if (enqueueFlusso(&dest->msg_head, 1, sender->id, NULL, 0)) // modifichi la codsa dei flussi del destinatario
     {
+        pthread_mutex_unlock(&g->mutex);
         return 1; // errore
     }
 
@@ -583,6 +671,7 @@ int nocon(int fd)
 //[IQUIT+++]
 int quit(int fd)
 {
+
     if (send(fd, "GOBYE+++", 8, 0) == -1)
     {
         perror("Errore nell'invio di GOBYE");

@@ -97,6 +97,7 @@ void printGraph(Graph *g)
     {
         printf("\n========================================\n");
         printf("VERTICE: %s\n", v->id);
+        printf("logged-in=%d\n",v->logged_in);
         printf("========================================\n");
 
         /* Lista amici */
