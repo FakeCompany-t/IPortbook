@@ -3,6 +3,7 @@
 
 #include "graph.h"
 #include "flusso.h"
+#include "utility.h"
 #include "check_field.h"
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -16,7 +17,7 @@
 int regis(char *id, int port, int mdp, Graph *g, Vertex *client);
 
 // [GOBYE+++]
-int godbye(int fd);
+int godbye(int fd, Vertex *client);
 
 // [CONNE id mdp+++]
 int conne(char *id, int mdp, Graph *g, Vertex **client);

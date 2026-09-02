@@ -13,7 +13,7 @@ int regis(char *id, int port, int mdp, Graph *g, Vertex *client)
 
         pthread_mutex_unlock(&g->mutex);
 
-        return godbye(fd);
+        return godbye(fd, client);
     }
 
     if (id_exists(g, id))
@@ -23,7 +23,7 @@ int regis(char *id, int port, int mdp, Graph *g, Vertex *client)
 
         pthread_mutex_unlock(&g->mutex);
 
-        return godbye(fd);
+        return godbye(fd, client);
     }
 
     // termini la popolazione del nodo
@@ -66,7 +66,7 @@ int welco(){
 */
 
 // [GOBYE+++]
-int godbye(int fd)
+int godbye(int fd, Vertex *client)
 {
     if (send(fd, "GOBYE+++", 8, 0) == -1)
     {
@@ -74,6 +74,7 @@ int godbye(int fd)
     }
     else
     {
+        client->logged_in = 0;
         return close(fd);
     }
 }
@@ -111,7 +112,7 @@ int conne(char *id, int mdp, Graph *g, Vertex **client)
         free(*client);
         *client = NULL;
 
-        return godbye(fd);
+        return godbye(fd, *client);
     }
 
     /*
@@ -129,7 +130,7 @@ int conne(char *id, int mdp, Graph *g, Vertex **client)
         free(*client);
         *client = NULL;
 
-        return godbye(fd);
+        return godbye(fd, *client);
     }
 
     /*
@@ -270,8 +271,19 @@ int mess(char *id, char *mess, Graph *g, Vertex *sender)
         return messfailsend(sender->socket_fd);
     }
 
+    if (!areFriends(sender, dest))
+    {
+        printf("[DEBUG] %s e %s non sono amici\n", sender->id, dest->id);
+        
+        pthread_mutex_unlock(&g->mutex);
+        return messfailsend(sender->socket_fd);
+    }
+
     if (enqueueFlusso(&dest->msg_head, 2, sender->id, mess, 0)) // modifichi la codsa dei flussi del destinatario
     {
+
+        pthread_mutex_unlock(&g->mutex);
+        godbye(sender->socket_fd, sender);
         return 1; // errore
     }
 
@@ -668,13 +680,12 @@ int nocon(int fd)
     return send(fd, "NOCON+++", 8, 0);
 }
 
+/*
 //[IQUIT+++]
 int quit(int fd)
 {
 
-    if (send(fd, "GOBYE+++", 8, 0) == -1)
-    {
-        perror("Errore nell'invio di GOBYE");
-    }
-    return close(fd);
+
+return close(fd);
 }
+*/

@@ -78,7 +78,7 @@ void *client_handler(void *arg)
             if (client->logged_in)
             {
                 printf("[WARN] Operazione richiesta da client loggato\n");
-                godbye(client->socket_fd);
+                godbye(client->socket_fd, client);
                 return NULL;
             }
             printf("[INFO] Eseguo handle_conne_parse\n");
@@ -86,6 +86,12 @@ void *client_handler(void *arg)
         }
         else if (strncmp(comando, "FRIE?", 5) == 0)
         {
+            if (!client->logged_in)
+            {
+                printf("[WARN] Operazione richiesta da client non loggato\n");
+                godbye(client->socket_fd, client);
+                return NULL;
+            }
             printf("[INFO] Eseguo handle_frie_parse\n");
             handle_frie_parse((char *)buffer, g, client);
         }
@@ -94,7 +100,7 @@ void *client_handler(void *arg)
             if (!client->logged_in)
             {
                 printf("[WARN] Operazione richiesta da client non loggato\n");
-                godbye(client->socket_fd);
+                godbye(client->socket_fd, client);
                 return NULL;
             }
             printf("[INFO] Eseguo handle_mess_parse\n");
@@ -105,7 +111,7 @@ void *client_handler(void *arg)
             if (!client->logged_in)
             {
                 printf("[WARN] Operazione richiesta da client non loggato\n");
-                godbye(client->socket_fd);
+                godbye(client->socket_fd, client);
                 return NULL;
             }
             printf("[INFO] Eseguo handle_consu_parse\n");
@@ -116,7 +122,7 @@ void *client_handler(void *arg)
             if (!client->logged_in)
             {
                 printf("[WARN] Operazione richiesta da client non loggato\n");
-                godbye(client->socket_fd);
+                godbye(client->socket_fd, client);
                 return NULL;
             }
             printf("[INFO] Eseguo handle_iquit_parse\n");
@@ -283,14 +289,8 @@ int handle_conne_parse(char *buffer, Graph *g, Vertex **client)
 int handle_frie_parse(char *buffer, Graph *g, Vertex *client)
 {
     printf("Informazioni Client:");
-    printf("id:%s",client->id);
-    printf("logged-in:%d",client->logged_in);
-    if (!client->logged_in)
-    {
-        printf("[WARN] Operazione richiesta da client non loggato\n");
-        godbye(client->socket_fd);
-        return -1;
-    }
+    printf("id:%s", client->id);
+    printf("logged-in:%d", client->logged_in);
 
     char id[10] = {0}; // inizializzo a zero
     int i = 6;         // salto "FRIE? "
@@ -441,5 +441,5 @@ int handle_iquit_parse(char *buffer, Graph *g, Vertex *client)
     printf("[DEBUG] Formato IQUIT corretto\n");
 
     client->logged_in = 0;
-    return quit(client->socket_fd);
+    return godbye(client->socket_fd, client);
 }

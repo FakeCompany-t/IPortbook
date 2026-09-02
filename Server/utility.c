@@ -62,3 +62,19 @@ char* spacchetta_udp(int port) {
     return s;
 }
 
+
+int areFriends(Vertex *a, Vertex *b)
+{
+    Edge *e;
+
+    if (a == NULL || b == NULL)
+        return 0;
+
+    for (e = a->adj_head; e != NULL; e = e->next)
+    {
+        if (strncmp(e->id, b->id, 8) == 0)
+            return 1;
+    }
+
+    return 0;
+}

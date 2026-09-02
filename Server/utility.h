@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include "graph.h"
 
 // ==========================
 // Conversione MDP (2 byte)
@@ -26,5 +27,7 @@ int converti_udp(char *port_ptr);
 // Converte int in stringa di 4 cifre (allocata dinamicamente)
 // ATTENZIONE: la memoria va liberata con free()
 char* spacchetta_udp(int port);
+
+int areFriends(Vertex *a, Vertex *b);
 
 #endif
